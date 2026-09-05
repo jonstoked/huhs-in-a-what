@@ -156,7 +156,6 @@ export default function App() {
         <p className="u">
           {what.emoji} {resultUnit}
         </p>
-        <p className="foot">{metric.line}</p>
       </section>
 
       <div className="bar">

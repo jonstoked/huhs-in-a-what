@@ -4,22 +4,19 @@
       "id": "length",
       "label": "Length",
       "emoji": "📏",
-      "base": "meters",
-      "line": "Laid end to end, give or take."
+      "base": "meters"
     },
     {
       "id": "volume",
       "label": "Volume",
       "emoji": "🥤",
-      "base": "liters",
-      "line": "Sloshed together, give or take."
+      "base": "liters"
     },
     {
       "id": "weight",
       "label": "Weight",
       "emoji": "⚖️",
-      "base": "kilograms",
-      "line": "All on the scale, give or take."
+      "base": "kilograms"
     }
   ],
   "units": [
