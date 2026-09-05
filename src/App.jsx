@@ -3,32 +3,37 @@ import data from './data/units.json'
 import Picker from './components/Picker.jsx'
 import { article, formatResult, unitLabel } from './format.js'
 
-const CATS = data.categories
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
-const catById = (id) => CATS.find((c) => c.id === id) || CATS[0]
+const METRICS = data.metrics
+// One roster, three measurements each — so switching metric keeps your units.
+const UNITS = [...data.units].sort((a, b) =>
+  a.name.localeCompare(b.name, 'en', { sensitivity: 'base' })
+)
 
-// A fresh absurd question: random category, two different units.
-function roll(catId) {
-  const cat = catId ? catById(catId) : pick(CATS)
-  const huh = pick(cat.units)
-  const what = pick(cat.units.filter((u) => u.id !== huh.id))
-  return { cat: cat.id, huh: huh.id, what: what.id }
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
+const metricById = (id) => METRICS.find((m) => m.id === id) || METRICS[0]
+const otherThan = (id) => pick(UNITS.filter((u) => u.id !== id))
+
+function roll() {
+  const huh = pick(UNITS)
+  return { metric: pick(METRICS).id, huh: huh.id, what: otherThan(huh.id).id }
 }
 
-const FALLBACK = { cat: 'length', huh: 'spermwhale', what: 'hotdog' }
+// Tilda opens the show; her opponent is a different surprise every time.
+function openingQuestion() {
+  const huh = UNITS.some((u) => u.id === 'tilda') ? 'tilda' : UNITS[0].id
+  return { metric: pick(METRICS).id, huh, what: otherThan(huh).id }
+}
 
 function fromUrl() {
-  if (typeof window === 'undefined') return FALLBACK
+  if (typeof window === 'undefined') return openingQuestion()
   const p = new URLSearchParams(window.location.search)
-  if (!p.get('h') && !p.get('c')) return FALLBACK
-  const cat = catById(p.get('c'))
-  const has = (id) => cat.units.some((u) => u.id === id)
-  const h = p.get('h')
-  const w = p.get('w')
+  if (!p.get('h') && !p.get('c')) return openingQuestion()
+  const has = (id) => UNITS.some((u) => u.id === id)
+  const huh = has(p.get('h')) ? p.get('h') : 'tilda'
   return {
-    cat: cat.id,
-    huh: has(h) ? h : cat.units[0].id,
-    what: has(w) ? w : cat.units[1].id,
+    metric: metricById(p.get('c')).id,
+    huh,
+    what: has(p.get('w')) && p.get('w') !== huh ? p.get('w') : otherThan(huh).id,
   }
 }
 
@@ -37,18 +42,17 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [spin, setSpin] = useState(0)
 
-  const cat = catById(state.cat)
-  const units = cat.units
-  const huhIndex = Math.max(0, units.findIndex((u) => u.id === state.huh))
-  const whatIndex = Math.max(0, units.findIndex((u) => u.id === state.what))
-  const huh = units[huhIndex]
-  const what = units[whatIndex]
+  const metric = metricById(state.metric)
+  const huhIndex = Math.max(0, UNITS.findIndex((u) => u.id === state.huh))
+  const whatIndex = Math.max(0, UNITS.findIndex((u) => u.id === state.what))
+  const huh = UNITS[huhIndex]
+  const what = UNITS[whatIndex]
 
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') return ''
-    const p = new URLSearchParams({ c: cat.id, h: huh.id, w: what.id })
+    const p = new URLSearchParams({ c: metric.id, h: huh.id, w: what.id })
     return `${window.location.origin}${window.location.pathname}?${p}`
-  }, [cat.id, huh.id, what.id])
+  }, [metric.id, huh.id, what.id])
 
   useEffect(() => {
     if (shareUrl) window.history.replaceState(null, '', shareUrl)
@@ -60,7 +64,7 @@ export default function App() {
     return () => clearTimeout(t)
   }, [toast])
 
-  const ratio = huh.v / what.v
+  const ratio = huh[metric.id] / what[metric.id]
   const result = formatResult(ratio)
   const resultUnit = result.flipped
     ? `of ${article(what.name)} ${what.name}`
@@ -96,13 +100,13 @@ export default function App() {
       </header>
 
       <nav className="cats" aria-label="What are we measuring?">
-        {CATS.map((c) => (
+        {METRICS.map((m) => (
           <button
-            key={c.id}
-            className={'cat' + (c.id === cat.id ? ' on' : '')}
-            onClick={() => c.id !== cat.id && setState(roll(c.id))}
+            key={m.id}
+            className={'cat' + (m.id === metric.id ? ' on' : '')}
+            onClick={() => setState((s) => ({ ...s, metric: m.id }))}
           >
-            <span aria-hidden="true">{c.emoji}</span> {c.label}
+            <span aria-hidden="true">{m.emoji}</span> {m.label}
           </button>
         ))}
       </nav>
@@ -113,10 +117,10 @@ export default function App() {
           <span className="swipehint">swipe ›</span>
         </div>
         <Picker
-          items={units}
+          items={UNITS}
           index={huhIndex}
           label="Huh"
-          onIndex={(i) => setState((s) => ({ ...s, huh: units[i].id }))}
+          onIndex={(i) => setState((s) => ({ ...s, huh: UNITS[i].id }))}
         />
       </section>
 
@@ -137,10 +141,10 @@ export default function App() {
           <span className="swipehint">swipe ›</span>
         </div>
         <Picker
-          items={units}
+          items={UNITS}
           index={whatIndex}
           label="What"
-          onIndex={(i) => setState((s) => ({ ...s, what: units[i].id }))}
+          onIndex={(i) => setState((s) => ({ ...s, what: UNITS[i].id }))}
         />
       </section>
 
@@ -152,7 +156,7 @@ export default function App() {
         <p className="u">
           {what.emoji} {resultUnit}
         </p>
-        <p className="foot">{cat.line}</p>
+        <p className="foot">{metric.line}</p>
       </section>
 
       <div className="bar">

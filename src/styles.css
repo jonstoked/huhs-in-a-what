@@ -169,19 +169,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .dots {
   display: flex;
   justify-content: center;
-  gap: 3px;
-  padding: 7px 12px 0;
+  gap: 2px;
+  padding: 7px 10px 0;
   flex-wrap: nowrap;
 }
 .dot {
-  width: 3px;
+  width: 2px;
   height: 3px;
   border-radius: 999px;
   background: var(--ink);
   opacity: 0.18;
   transition: opacity 0.2s, transform 0.2s;
 }
-.dot.on { opacity: 1; transform: scale(2.1); background: var(--accent); }
+.dot.on { opacity: 1; transform: scaleX(2.4) scaleY(2); background: var(--accent); }
 
 /* ---------- swap ---------- */
 .swapline { display: flex; justify-content: center; margin: 8px 0 -4px; }
